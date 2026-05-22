@@ -17,22 +17,25 @@ jobs:
       with:
         python-version: '3.10'
 
+    # 💥 FULL CLEAN (важно)
+    - name: Clean caches
+      run: |
+        rm -rf ~/.buildozer
+        rm -rf $HOME/android-sdk
+        rm -rf ~/.android
+
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y git zip unzip wget openjdk-17-jdk
-
-    - name: Clean Android cache
-      run: |
-        rm -rf $HOME/android-sdk
-        rm -rf ~/.buildozer
 
     - name: Install Buildozer
       run: |
         pip install --upgrade pip
         pip install buildozer cython
 
-    - name: Install Android SDK
+    # 💥 ANDROID SDK (LOCKED 33.0.2)
+    - name: Install Android SDK (LOCKED VERSION)
       run: |
         export ANDROID_HOME=$HOME/android-sdk
         mkdir -p $ANDROID_HOME
@@ -49,7 +52,7 @@ jobs:
 
         yes | sdkmanager --licenses || true
 
-        sdkmanager --sdk_root=$ANDROID_HOME \
+        sdkmanager --sdk_root=$ANDROID_HOME --no_https \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2"
