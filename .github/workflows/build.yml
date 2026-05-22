@@ -13,14 +13,9 @@ jobs:
       image: kivy/buildozer:latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fix permissions (IMPORTANT)
+      - name: Build APK (force no prompt)
         run: |
-          adduser --disabled-password builder || true
-          chown -R builder:builder .
-
-      - name: Build APK (non-root)
-        run: |
-          su builder -c "buildozer android debug"
+          buildozer android debug --allow-root
