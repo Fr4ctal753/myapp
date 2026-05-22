@@ -12,9 +12,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Buildozer in Docker (REAL FIX)
+      - name: Build APK inside Docker (clean environment)
         run: |
           docker run --rm \
             -v $PWD:/home/user/app \
+            -w /home/user/app \
             kivy/buildozer:latest \
-            bash -c "cd /home/user/app && buildozer android debug --allow-root"
+            bash -c "
+              pip install --upgrade pip &&
+              buildozer android debug --allow-root
+            "
