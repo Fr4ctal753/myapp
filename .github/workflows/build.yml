@@ -2,7 +2,8 @@ name: Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,13 +13,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build APK inside Docker (clean environment)
+      - name: Install system deps
         run: |
-          docker run --rm \
-            -v $PWD:/home/user/app \
-            -w /home/user/app \
-            kivy/buildozer:latest \
-            bash -c "
-              pip install --upgrade pip &&
-              buildozer android debug --allow-root
-            "
+          sudo apt update
+          sudo apt install -y \
+            python3-pip \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            wget \
+            curl
+
+      - name: Install Buildozer
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install buildozer cython
+
+      - name: Setup Android SDK (FIX AIDL + build-tools)
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          mkdir -p $ANDROID_HOME/cmdline-tools
+
+          cd $HOME
+
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+          unzip -q tools.zip
+
+          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
+
+          yes | sdkmanager --licenses || true
+
+          sdkmanager --sdk_root=$ANDROID_HOME \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2"
+
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+
+      - name: Build APK (NO ROOT CONFIRM FIX)
+        run: |
+          export BUILDOZER_ALLOW_ROOT=1
+          yes | buildozer -v android debug
