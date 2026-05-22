@@ -1,8 +1,9 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,10 +13,14 @@ jobs:
       image: kivy/buildozer:latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build APK
+      - name: Fix permissions (IMPORTANT)
         run: |
-          export BUILDOZER_ALLOW_ROOT=1
-          buildozer -v android debug
+          adduser --disabled-password builder || true
+          chown -R builder:builder .
+
+      - name: Build APK (non-root)
+        run: |
+          su builder -c "buildozer android debug"
