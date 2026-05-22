@@ -9,27 +9,65 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install system deps
+      - name: Install system packages
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk \
-            autoconf libtool pkg-config cmake \
-            zlib1g-dev libffi-dev libssl-dev
+          sudo apt install -y \
+            openjdk-17-jdk \
+            unzip zip git \
+            autoconf automake libtool \
+            pkg-config cmake \
+            libffi-dev libssl-dev \
+            zlib1g-dev
 
-      - name: Install Buildozer
+      - name: Install Android SDK
+        run: |
+          mkdir -p $ANDROID_HOME
+
+          cd $HOME
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
+
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          unzip sdk.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+          yes | sdkmanager --licenses
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2"
+
+      - name: Verify AIDL exists (IMPORTANT DEBUG STEP)
+        run: |
+          ls $ANDROID_HOME/build-tools/33.0.2/
+          test -f $ANDROID_HOME/build-tools/33.0.2/aidl || exit 1
+
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install cython buildozer virtualenv python-for-android
+          pip install buildozer cython virtualenv python-for-android
 
       - name: Build APK
         run: |
           buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: bin/*.apk
