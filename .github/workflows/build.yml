@@ -13,49 +13,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install system deps
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.10
+
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y \
-            python3-pip \
-            git \
-            zip \
-            unzip \
-            openjdk-17-jdk \
-            wget \
-            curl
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip
 
       - name: Install Buildozer
         run: |
-          python3 -m pip install --upgrade pip
-          pip3 install buildozer cython
+          pip install --upgrade pip
+          pip install buildozer cython
 
-      - name: Setup Android SDK (FIX AIDL + build-tools)
-        run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          mkdir -p $ANDROID_HOME/cmdline-tools
-
-          cd $HOME
-
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-          unzip -q tools.zip
-
-          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-
-          yes | sdkmanager --licenses || true
-
-          sdkmanager --sdk_root=$ANDROID_HOME \
-            "platform-tools" \
-            "platforms;android-33" \
-            "build-tools;33.0.2"
-
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
-
-      - name: Build APK (NO ROOT CONFIRM FIX)
+      - name: Fix root + CI env
         run: |
           export BUILDOZER_ALLOW_ROOT=1
+          export CI=1
+          export PIP_BREAK_SYSTEM_PACKAGES=1
+
+      - name: Build APK
+        run: |
+          export BUILDOZER_ALLOW_ROOT=1
+          export CI=1
           yes | buildozer -v android debug
