@@ -1,4 +1,4 @@
-name: Build APK (stable)
+name: Build APK
 
 on:
   push:
@@ -17,4 +17,5 @@ jobs:
 
       - name: Build APK
         run: |
+          export BUILDOZER_ALLOW_ROOT=1
           buildozer -v android debug
