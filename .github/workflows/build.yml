@@ -13,20 +13,20 @@ jobs:
       ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
 
     steps:
-    - name: Checkout repo
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install system deps
+    - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y git zip unzip openjdk-17-jdk python3 python3-pip wget
 
-    - name: Install Buildozer
+    - name: Install Python tools
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install cython buildozer
 
-    - name: Install Android SDK + FIX AIDL
+    - name: Install Android SDK (FIX AIDL + LICENSES)
       run: |
         mkdir -p $ANDROID_HOME
         cd $HOME
@@ -37,20 +37,20 @@ jobs:
         mkdir -p $ANDROID_HOME/cmdline-tools
         mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
 
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+
+        yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses
+
+        sdkmanager --sdk_root=$ANDROID_HOME \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2"
 
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses
 
-        echo "Checking aidl:"
         find $ANDROID_HOME -name aidl
 
     - name: Build APK
       run: |
-        export ANDROIDSDK=$ANDROID_HOME
-        export ANDROID_HOME=$ANDROID_HOME
         export PATH=$PATH:$ANDROID_HOME/platform-tools
-
         buildozer -v android debug
